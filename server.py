@@ -210,17 +210,30 @@ def arc_send_usdc(to: str, amount: float, gas_limit: int = 21000) -> dict:
     except ImportError:
         return {"ok": False, "error": "eth-account not installed. Run: pip install eth-account"}
 
+    from eth_utils import to_checksum_address
+
     acct = Account.from_key(key)
     nonce = _hex_to_int(_rpc("eth_getTransactionCount", [acct.address, "pending"]))
-    gas_price = _hex_to_int(_rpc("eth_gasPrice", []))
     value = int(amount * 10**NATIVE_DECIMALS)
+    # Arc uses EIP-1559 (type 2) with a 20 Gwei minimum base fee.
+    try:
+        base = _hex_to_int(_rpc("eth_getBlockByNumber", ["latest", False]).get("baseFeePerGas", "0x0"))
+    except Exception:
+        base = 0
+    base = max(base, 20 * 10**9)
+    try:
+        priority = _hex_to_int(_rpc("eth_maxPriorityFeePerGas", [])) or 10**9
+    except Exception:
+        priority = 10**9
     tx = {
-        "to": to,
+        "to": to_checksum_address(to),
         "value": value,
         "gas": gas_limit,
-        "gasPrice": gas_price,
+        "maxFeePerGas": base * 2 + priority,
+        "maxPriorityFeePerGas": priority,
         "nonce": nonce,
         "chainId": CHAIN_ID,
+        "type": 2,
     }
     signed = Account.sign_transaction(tx, key)
     raw = signed.raw_transaction.hex()
