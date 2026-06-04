@@ -1,0 +1,10 @@
+[project]
+name = "arc-testnet-mcp"
+version = "0.1.0"
+description = "MCP server for Circle's Arc testnet (EVM L1 with USDC as native gas): balances, transactions, and sending testnet USDC from a Claude Code agent."
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.28.1",
+    "mcp[cli]>=1.27.1",
+    "eth-account>=0.13.0",
+]
